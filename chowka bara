@@ -1,0 +1,154 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_BLOCKS 24
+#define BOARD_SIZE 25
+
+int p1_board[BOARD_SIZE];
+int p2_board[BOARD_SIZE];
+int pawn1, pawn2, pawn3, pawn4;
+
+int roll_the_dice() {
+    int dice[] = {1, 1, 2, 2, 2, 3, 3, 4, 8};
+    int move = dice[rand() % 9];
+    return move;
+}
+
+void find_all_pawns_locations(int board[], int *pawn1, int *pawn2, int *pawn3, int *pawn4) {
+    int i;
+    *pawn1 = -1;
+    *pawn2 = -1;
+    *pawn3 = -1;
+    *pawn4 = -1;
+
+    for (i = 0; i < BOARD_SIZE; ++i) {
+        if (board[i] > 0) {
+            if (*pawn1 == -1) {
+                *pawn1 = i;
+            } else if (*pawn2 == -1) {
+                *pawn2 = i;
+            } else if (*pawn3 == -1) {
+                *pawn3 = i;
+            } else if (*pawn4 == -1) {
+                *pawn4 = i;
+            }
+        }
+    }
+}
+
+void print_matrix(int board[]) {
+    printf("%d %d %d %d %d\n", board[10], board[9], board[8], board[7], board[6]);
+    printf("%d %d %d %d %d\n", board[11], board[18], board[19], board[20], board[5]);
+    printf("%d %d %d %d %d\n", board[12], board[17], board[24], board[21], board[4]);
+    printf("%d %d %d %d %d\n", board[13], board[16], board[23], board[22], board[3]);
+    printf("%d %d %d %d %d\n\n", board[14], board[15], board[0], board[1], board[2]);
+}
+
+void print_matrix2(int board1[], int board2[]) {
+    printf(" P1 Matrix \t\t P2 Matrix\n");
+    printf(" %d %d %d %d %d\t\t %d %d %d %d %d\n", board1[10], board1[9], board1[8], board1[7], board1[6],
+           board2[10], board2[9], board2[8], board2[7], board2[6]);
+    printf(" %d %d %d %d %d\t\t %d %d %d %d %d\n", board1[11], board1[18], board1[19], board1[20], board1[5],
+           board2[11], board2[18], board2[19], board2[20], board2[5]);
+    printf(" %d %d %d %d %d\t\t %d %d %d %d %d\n", board1[12], board1[17], board1[24], board1[21], board1[4],
+           board2[12], board2[17], board2[24], board2[21], board2[4]);
+    printf(" %d %d %d %d %d\t\t %d %d %d %d %d\n", board1[13], board1[16], board1[23], board1[22], board1[3],
+           board2[13], board2[16], board2[23], board2[22], board2[3]);
+    printf(" %d %d %d %d %d\t\t %d %d %d %d %d\n\n", board1[14], board1[15], board1[0], board1[1], board1[2],
+           board2[14], board2[15], board2[0], board2[1], board2[2]);
+}
+
+int move_human_pawn(int pawn, int roll, int p2_board[]) {
+    int ret_code = 0;
+    if (pawn < MAX_BLOCKS && pawn + roll <= MAX_BLOCKS) {
+        if (p2_board[pawn + roll] > 0 && (pawn + roll) % 4 != 0) {
+            printf("Invalid roll!!! Pick again\n");
+            ret_code = 1;
+        } else if (p2_board[pawn + roll] == 0 || (pawn + roll) % 4 == 0) {
+            p2_board[pawn + roll]++;
+            p2_board[pawn]--;
+        }
+    }
+    return ret_code;
+}
+
+int move_pawn_to_next_pos(int move, int p1_board[]) {
+    int i;
+    for (i = MAX_BLOCKS; i >= 0; --i) {
+        if (p1_board[i] > 0 && i < MAX_BLOCKS && i + move <= MAX_BLOCKS) {
+            if (p1_board[i + move] == 0 || (i + move) % 4 == 0 || i + move == MAX_BLOCKS) {
+                p1_board[i]--;
+                p1_board[i + move]++;
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int main() {
+    srand(time(NULL));
+
+    int count = 1;
+    int p2_count = 1;
+    int ret;
+
+    // Initialize game boards
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+        p1_board[i] = 0;
+        p2_board[i] = 0;
+    }
+
+    // Set initial pawn positions
+    p1_board[14] = p1_board[15] = p1_board[0] = p1_board[1] = p1_board[2] = 4;
+    p2_board[14] = p2_board[15] = p2_board[0] = p2_board[1] = p2_board[2] = 4;
+
+    while (count < 100 && p1_board[MAX_BLOCKS] < 4) {
+        int move = roll_the_dice();
+        printf("\nP1 turn: %d P1 roll: %d\n", count, move);
+
+        ret = move_pawn_to_next_pos(move, p1_board);
+        print_matrix2(p1_board, p2_board);
+        find_all_pawns_locations(p1_board, &pawn1, &pawn2, &pawn3, &pawn4);
+        
+        int p2_roll = 0;
+        if (pawn1 != -1 || pawn2 != -1 || pawn3 != -1 || pawn4 != -1) {
+            p2_roll = roll_the_dice();
+            printf("\nP2 turn: %d P2 roll: %d\n", p2_count, p2_roll);
+            int ret_code = 1;
+
+            while (ret_code == 1) {
+                find_all_pawns_locations(p2_board, &pawn1, &pawn2, &pawn3, &pawn4);
+                ret_code = move_human_pawn(pawn1, p2_roll, p2_board);
+            }
+
+            print_matrix2(p1_board, p2_board);
+        }
+
+        if (move == 4 || move == 8) {
+            move = roll_the_dice();
+            printf("\nP1 turn: %d P1 roll: %d\n", count, move);
+
+            ret = move_pawn_to_next_pos(move, p1_board);
+            print_matrix2(p1_board, p2_board);
+            find_all_pawns_locations(p1_board, &pawn1, &pawn2, &pawn3, &pawn4);
+        }
+
+        if (p2_roll == 4 || p2_roll == 8) {
+            find_all_pawns_locations(p2_board, &pawn1, &pawn2, &pawn3, &pawn4);
+            int ret_code = 1;
+
+            while (ret_code == 1) {
+                ret_code = move_human_pawn(pawn1, p2_roll, p2_board);
+            }
+
+            print_matrix2(p1_board, p2_board);
+        }
+
+        count++;
+        p2_count++;
+    }
+
+    return 0;
+}
